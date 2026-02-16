@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "name": "Anamika Rai",
+    "department": "CSE",
+    "basicSalary": 5000000
+  },
+  {
+    "id": 2,
+    "name": "Khushi Rai",
+    "department": "CSE",
+    "basicSalary": 6000000
+  }
+]
