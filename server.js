@@ -1,63 +1,78 @@
 const express = require("express");
-const fileHandler = require("./modules/fileHandler");
-const path = require("path");
+const fs = require("fs");
 
 const app = express();
-const PORT = 3000;
 
-// Middleware
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
-
-// Set EJS
+app.use(express.static("public"));
 app.set("view engine", "ejs");
-app.set("views", "./views");
 
-// Dashboard Route
-app.get("/", async (req, res) => {
-  const employees = await fileHandler.read();
-  // Show Add Employee Form
-app.get("/add", (req, res) => {
-  res.render("add");
+// ================= HOME =================
+app.get("/", (req, res) => {
+    const data = fs.readFileSync("employees.json");
+    const employees = JSON.parse(data);
+
+    res.render("index", { employees });
 });
 
-// Handle Form Submission
-app.post("/add", async (req, res) => {
-  const { name, department, basicSalary } = req.body;
+// ================= ADD =================
+app.post("/add", (req, res) => {
+    const data = fs.readFileSync("employees.json");
+    const employees = JSON.parse(data);
 
-  const employees = await fileHandler.read();
-
-  const newEmployee = {
-    id: employees.length > 0 ? employees[employees.length - 1].id + 1 : 1,
-    name,
-    department,
-    basicSalary: Number(basicSalary)
-  };
-
-  employees.push(newEmployee);
-
-  await fileHandler.write(employees);
-
-  res.redirect("/");
-});
-
-  // Calculate Tax and Net Salary
-  const updatedEmployees = employees.map(emp => {
-    const tax = emp.basicSalary * 0.10;
-    const netSalary = emp.basicSalary - tax;
-
-    return {
-      ...emp,
-      tax,
-      netSalary
+    const newEmployee = {
+        id: Date.now(),
+        name: req.body.name,
+        salary: Number(req.body.salary),
+        gender: req.body.gender
     };
-  });
 
-  res.render("index", { employees: updatedEmployees });
+    employees.push(newEmployee);
+
+    fs.writeFileSync("employees.json", JSON.stringify(employees, null, 2));
+    res.redirect("/");
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+// ================= DELETE =================
+app.get("/delete/:id", (req, res) => {
+    const data = fs.readFileSync("employees.json");
+    let employees = JSON.parse(data);
+
+    employees = employees.filter(emp => emp.id != req.params.id);
+
+    fs.writeFileSync("employees.json", JSON.stringify(employees, null, 2));
+    res.redirect("/");
+});
+
+// ================= EDIT PAGE =================
+app.get("/edit/:id", (req, res) => {
+    const data = fs.readFileSync("employees.json");
+    const employees = JSON.parse(data);
+
+    const employee = employees.find(emp => emp.id == req.params.id);
+
+    res.render("edit", { employee });
+});
+
+// ================= UPDATE =================
+app.post("/update/:id", (req, res) => {
+    const data = fs.readFileSync("employees.json");
+    let employees = JSON.parse(data);
+
+    employees = employees.map(emp => {
+        if (emp.id == req.params.id) {
+            emp.name = req.body.name;
+            emp.salary = Number(req.body.salary);
+            emp.gender = req.body.gender;
+        }
+        return emp;
+    });
+
+    fs.writeFileSync("employees.json", JSON.stringify(employees, null, 2));
+    res.redirect("/");
+});
+
+// ================= SERVER =================
+app.listen(3000, () => {
+    console.log("Server running at http://localhost:3000");
 });
